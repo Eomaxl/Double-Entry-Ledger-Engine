@@ -1,0 +1,101 @@
+# NATS Server Configuration for Double-Entry Ledger Engine
+# Copy this file to nats.conf and adjust values for your environment
+# NOTE: current app uses a no-op event publisher unless NATS_ENABLED=true and
+# a concrete publisher implementation is added.
+
+# Server Configuration
+server_name: "ledger-nats"
+port: 4222
+http_port: 8222
+
+# Logging
+log_file: "/var/log/nats/nats.log"
+logtime: true
+debug: false
+trace: false
+log_size_limit: 100MB
+max_traced_msg_len: 32768
+
+# Limits
+max_connections: 64K
+max_control_line: 4KB
+max_payload: 1MB
+max_pending: 256MB
+ping_interval: "2m"
+ping_max: 2
+write_deadline: "10s"
+
+# JetStream Configuration
+jetstream {
+    # Storage directory
+    store_dir: "/data/jetstream"
+    
+    # Memory limits
+    max_memory_store: 1GB
+    max_file_store: 10GB
+    
+    # Sync settings
+    sync_interval: "2m"
+    
+    # Compression
+    compress_ok: true
+}
+
+# TLS Configuration (uncomment for production)
+# tls {
+#     cert_file: "/etc/nats/ssl/server.crt"
+#     key_file: "/etc/nats/ssl/server.key"
+#     ca_file: "/etc/nats/ssl/ca.crt"
+#     verify: true
+#     timeout: 5
+# }
+
+# Authentication (uncomment for production)
+# authorization {
+#     users = [
+#         {
+#             user: "ledger_service"
+#             password: "secure_password"
+#             permissions: {
+#                 publish: ["ledger.>"]
+#                 subscribe: ["ledger.>"]
+#             }
+#         }
+#     ]
+# }
+
+# Clustering Configuration (for high availability)
+# cluster {
+#     name: "ledger_cluster"
+#     listen: 0.0.0.0:6222
+#     
+#     authorization {
+#         user: "cluster_user"
+#         password: "cluster_password"
+#         timeout: 2
+#     }
+#     
+#     routes = [
+#         nats://nats-1:6222
+#         nats://nats-2:6222
+#         nats://nats-3:6222
+#     ]
+#     
+#     connect_retries: 30
+#     reconnect_time_wait: "5s"
+# }
+
+# Monitoring
+monitor_port: 8222
+system_account: "$SYS"
+
+# Performance Tuning
+# Disable slow consumers for JetStream
+no_slow_consumers: false
+
+# Write buffer size
+write_buffer_size: 64KB
+
+# Connection timeouts
+connect_error_reports: 3600
+reconnect_error_reports: 5

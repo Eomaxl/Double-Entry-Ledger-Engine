@@ -1,0 +1,22 @@
+{
+  "transactions": [
+    {
+      "state": "pending",
+      "entries": [
+        {
+          "account_id": "edd456fd-1097-4547-a739-da86cccb01af",
+          "currency_code": "USD",
+          "amount": "1.00",
+          "entry_type": "debit"
+        },
+        {
+          "account_id": "6cf01999-b48a-48f4-ba8f-38e8687c491f",
+          "currency_code": "USD",
+          "amount": "1.00",
+          "entry_type": "credit"
+        }
+      ],
+      "metadata": {"source":"ab"}
+    }
+  ]
+}

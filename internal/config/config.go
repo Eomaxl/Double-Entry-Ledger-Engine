@@ -437,7 +437,9 @@ func loadAPIKeysFromEnv() []APIKeyConfig {
 	keyEntries := strings.Split(keysStr, ";")
 
 	for _, entry := range keyEntries {
-		parts := strings.Split(entry, ":")
+		// Split into 3 parts only so permission values can safely contain ":".
+		// Format: key:name:perm1,perm2,...
+		parts := strings.SplitN(entry, ":", 3)
 		if len(parts) < 3 {
 			continue // Skip invalid entries
 		}

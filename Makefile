@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build test test-unit test-integration test-race lint fmt tidy clean
+.PHONY: help build test test-unit test-integration test-race lint fmt tidy clean trafficgen trafficgen-docker
 
 GO ?= go
 
@@ -15,6 +15,8 @@ help:
 	@echo "  make fmt               - Format all Go files"
 	@echo "  make tidy              - Tidy Go modules"
 	@echo "  make clean             - Clean test cache"
+	@echo "  make trafficgen        - Run synthetic traffic generator"
+	@echo "  make trafficgen-docker - Run traffic generator in Docker profile"
 
 build:
 	$(GO) build ./...
@@ -44,3 +46,9 @@ tidy:
 
 clean:
 	$(GO) clean -testcache
+
+trafficgen:
+	$(GO) run ./cmd/trafficgen $(ARGS)
+
+trafficgen-docker:
+	docker compose --profile trafficgen up --build trafficgen

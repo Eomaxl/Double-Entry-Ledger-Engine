@@ -1,0 +1,16 @@
+metric,value
+duration_ms,5003
+requests_total,999
+success_total,999
+failed_total,0
+avg_latency_ms,3.867
+p50_latency_ms,2.885
+p95_latency_ms,5.699
+p99_latency_ms,33.572
+batch_size,2
+
+second,success,failed,overall_rps
+1,198,0,197.936
+2,200,0,198.972
+3,200,0,199.316
+4,200,0,199.489
