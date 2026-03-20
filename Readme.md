@@ -132,10 +132,11 @@ Current runtime notes:
 
 ## Performance
 
-Target performance characteristics:
-- **Throughput**: >= 100,000 transactions per second
-- **Latency**: Sub-second p99 latency
-- **Scalability**: Horizontal scaling via stateless application servers
+Current benchmark characteristics (local Docker setup):
+- **Throughput (effective)**: ~825 RPS / QPS (30s run, batch size 5, 24,759 successful requests)
+- **Latency p95**: 12.621 ms
+- **Latency p99**: 22.436 ms
+- **Error rate**: 4 failures out of 24,763 requests (~0.016%)
 
 ## Synthetic Traffic Generator
 
