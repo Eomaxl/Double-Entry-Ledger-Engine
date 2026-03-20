@@ -28,9 +28,14 @@
       "id": 1,
       "targets": [
         {
-          "expr": "rate(http_requests_total[1m])",
-          "legendFormat": "req/s",
+          "expr": "sum(rate(ledger_http_requests_total[1m]))",
+          "legendFormat": "total",
           "refId": "A"
+        },
+        {
+          "expr": "sum by (method, endpoint) (rate(ledger_http_requests_total[1m]))",
+          "legendFormat": "{{method}} {{endpoint}}",
+          "refId": "B"
         }
       ],
       "title": "Request Rate (RPS)",
@@ -56,14 +61,19 @@
       "id": 2,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(ledger_http_request_duration_seconds_bucket[1m]))) * 1000",
           "legendFormat": "p95",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(ledger_http_request_duration_seconds_bucket[1m]))) * 1000",
           "legendFormat": "p99",
           "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, method, endpoint) (rate(ledger_http_request_duration_seconds_bucket[1m]))) * 1000",
+          "legendFormat": "{{method}} {{endpoint}}",
+          "refId": "C"
         }
       ],
       "title": "Latency (p95/p99)",
@@ -89,9 +99,14 @@
       "id": 3,
       "targets": [
         {
-          "expr": "rate(http_requests_total{status_code=~\"5..\"}[1m]) / clamp_min(rate(http_requests_total[1m]), 0.0001)",
-          "legendFormat": "5xx ratio",
+          "expr": "sum(rate(ledger_http_requests_total{status=~\"5..\"}[1m])) / clamp_min(sum(rate(ledger_http_requests_total[1m])), 0.0001)",
+          "legendFormat": "5xx_ratio",
           "refId": "A"
+        },
+        {
+          "expr": "sum by (status, method, endpoint) (rate(ledger_http_requests_total[1m]))",
+          "legendFormat": "{{status}} {{method}} {{endpoint}}",
+          "refId": "B"
         }
       ],
       "title": "Error Ratio",
