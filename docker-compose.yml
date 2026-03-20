@@ -3,7 +3,6 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: ledger-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,7 +19,6 @@ services:
 
   nats:
     image: nats:2.10-alpine
-    container_name: ledger-nats
     command: ["-js", "-m", "8222"]
     ports:
       - "4222:4222"  # Client connections
@@ -33,7 +31,6 @@ services:
 
   ledger-engine:
     build: .
-    container_name: ledger-engine
     ports:
       - "8080:8080"
     environment:
@@ -76,7 +73,9 @@ services:
       # Authentication Configuration
       AUTH_ENABLE_API_KEY: true
       AUTH_ENABLE_JWT: false
-      AUTH_API_KEYS: "dev-key-12345:development:transaction:post,transaction:read,transaction:settle,transaction:cancel,transaction:reverse,account:create,account:read,account:update,balance:read"
+      # AUTH_API_KEYS intentionally omitted for local dev.
+      # The app falls back to the built-in default dev key:
+      #   X-API-Key: dev-key-12345
       
       # Tracing Configuration (disabled by default)
       TRACING_ENABLED: false
