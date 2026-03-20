@@ -8,7 +8,8 @@ import (
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/api/errors"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/domain"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/metrics"
-	"github.com/Eomaxl/double-entry-ledger-engine/internal/service"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/query"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/transaction"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -16,16 +17,16 @@ import (
 
 // TransactionHandler handles HTTP requests for transaction operations
 type TransactionHandler struct {
-	processor service.TransactionProcessor
-	query     service.QueryService
+	processor transaction.TransactionProcessor
+	query     query.QueryService
 	metrics   *metrics.Metrics
 	logger    *zap.Logger
 }
 
 // NewTransactionHandler creates a new transaction handler
 func NewTransactionHandler(
-	processor service.TransactionProcessor,
-	query service.QueryService,
+	processor transaction.TransactionProcessor,
+	query query.QueryService,
 	metrics *metrics.Metrics,
 	logger *zap.Logger,
 ) *TransactionHandler {
@@ -110,7 +111,7 @@ func (h *TransactionHandler) PostBatchTransactions(c *gin.Context) {
 	}
 
 	// Convert to service requests
-	serviceReqs := make([]service.PostTransactionRequest, len(req.Transactions))
+	serviceReqs := make([]transaction.PostTransactionRequest, len(req.Transactions))
 	for i, txnReq := range req.Transactions {
 		serviceReq, err := h.convertToServiceRequest(txnReq)
 		if err != nil {
@@ -224,7 +225,7 @@ func (h *TransactionHandler) ReverseTransaction(c *gin.Context) {
 	}
 
 	// Convert to service request
-	serviceReq := service.ReversalRequest{
+	serviceReq := transaction.ReversalRequest{
 		IdempotencyKey: req.IdempotencyKey,
 		State:          req.State,
 		Description:    req.Description,
@@ -247,7 +248,7 @@ func (h *TransactionHandler) ReverseTransaction(c *gin.Context) {
 
 // ListTransactions handles GET /v1/transactions - List transactions with filters
 func (h *TransactionHandler) ListTransactions(c *gin.Context) {
-	filter := service.TransactionFilter{
+	filter := query.TransactionFilter{
 		Limit:  100, // Default limit
 		Offset: 0,   // Default offset
 	}
@@ -335,8 +336,8 @@ func (h *TransactionHandler) ListTransactions(c *gin.Context) {
 }
 
 // convertToServiceRequest converts HTTP request to service request
-func (h *TransactionHandler) convertToServiceRequest(req PostTransactionRequest) (*service.PostTransactionRequest, error) {
-	entries := make([]service.EntryRequest, len(req.Entries))
+func (h *TransactionHandler) convertToServiceRequest(req PostTransactionRequest) (*transaction.PostTransactionRequest, error) {
+	entries := make([]transaction.EntryRequest, len(req.Entries))
 
 	for i, entry := range req.Entries {
 		amount, err := decimal.NewFromString(entry.Amount)
@@ -353,7 +354,7 @@ func (h *TransactionHandler) convertToServiceRequest(req PostTransactionRequest)
 			return nil, fmt.Errorf("invalid entry type: %s", entry.EntryType)
 		}
 
-		entries[i] = service.EntryRequest{
+		entries[i] = transaction.EntryRequest{
 			AccountID:    entry.AccountID,
 			CurrencyCode: entry.CurrencyCode,
 			Amount:       amount,
@@ -362,7 +363,7 @@ func (h *TransactionHandler) convertToServiceRequest(req PostTransactionRequest)
 		}
 	}
 
-	return &service.PostTransactionRequest{
+	return &transaction.PostTransactionRequest{
 		IdempotencyKey: req.IdempotencyKey,
 		State:          req.State,
 		Entries:        entries,

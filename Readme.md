@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Double entry ledger engine is a high integrity, immutable, multi-currency ledger service that enforces strict double entry accounting principles. It serves as a functional money state engine for financial system including wallets, bank accounts, merchant settlements, and internal accounting. The system guarantees atomic transactions , strong consistency, immutability, auditability, and idempotent operations while supporting high throughput (>= 100K TPS target).
+The Double Entry Ledger Engine is a high-integrity, immutable, multi-currency ledger service that enforces strict double-entry accounting principles. It serves as a functional money-state engine for financial systems, including wallets, bank accounts, merchant settlements, and internal accounting. The system guarantees atomic transactions, strong consistency, immutability, auditability, and idempotent operations while supporting high throughput (>= 100K TPS target).
 
 ## Glossary
 
@@ -10,11 +10,11 @@ The Double entry ledger engine is a high integrity, immutable, multi-currency le
 - **Account**: A financial account that holds balances in one or more currencies
 - **Transaction**: An atomic operation that moves money between accounts following double-entry rules
 - **Entry**: A single debit or credit record within a transaction
-- **Ledger**: The complete immutable record of all transaction
+- **Ledger**: The complete immutable record of all transactions
 - **Balance**: The current or historical sum of all entries for an account in a specific currency
 - **Pending_State**: A transaction state indicating authorization but not yet settlement
 - **Settled_State**: A transaction state indicating final posting to the ledger
-- **Reversal**: A compensating transaction that negats a previous transaction
+- **Reversal**: A compensating transaction that negates a previous transaction
 - **Idempotency_Key**: A unique identifier ensuring duplicate transaction submissions produce identical results
 - **Currency_Code**: An ISO 4217 three-letter currency identifier
 - ***Transaction_Boundary**: The scope within which consistency guarantees apply
@@ -55,8 +55,8 @@ The system currently follows a layered Go architecture with explicit composition
                        │
 ┌──────────────────────▼───────────────────────┐
 │              internal/service                │
-│   Transaction processing, balance queries,   │
-│   orchestration of domain and repositories   │
+│   Feature subpackages: transaction, balance, │
+│   query (business orchestration by feature)  │
 └──────────────────────┬───────────────────────┘
                        │
 ┌──────────────────────▼───────────────────────┐
@@ -80,6 +80,10 @@ Current runtime notes:
 
 - HTTP transport is implemented with Gin under `internal/api`.
 - Application startup and graceful shutdown are coordinated in `internal/app`.
+- Service-layer features are split into focused subpackages:
+  - `internal/service/transaction`: transaction posting, settle/cancel/reverse, concurrency controls
+  - `internal/service/balance`: current/historical/multi-currency balance computation
+  - `internal/service/query`: transaction lookup, listing, and account statements
 - PostgreSQL is the primary persistence adapter.
 - Event publishing is explicitly optional. When disabled, the application uses a no-op publisher; when enabled, a concrete event adapter must be supplied.
 - Liveness and readiness endpoints are exposed separately from the general health endpoint.
@@ -107,7 +111,10 @@ Current runtime notes:
 │   ├── config/              # Configuration loading and validation
 │   ├── domain/              # Core business models and validation rules
 │   ├── repository/          # Repository contracts/interfaces
-│   ├── service/             # Application services and use-case orchestration
+│   ├── service/             # Service package root and feature packages
+│   │   ├── transaction/     # Transaction business flows and concurrency control
+│   │   ├── balance/         # Balance computation workflows
+│   │   └── query/           # Read/query workflows (transaction and statements)
 │   └── infrastructure/
 │       ├── database/        # PostgreSQL connection and migrations
 │       ├── events/          # Event publisher interfaces/adapters

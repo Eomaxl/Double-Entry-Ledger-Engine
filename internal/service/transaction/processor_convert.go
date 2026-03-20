@@ -1,4 +1,4 @@
-package service
+package transaction
 
 import (
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/domain"

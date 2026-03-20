@@ -1,4 +1,4 @@
-package service
+package transaction
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/events"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/metrics"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/repository"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -20,6 +22,13 @@ type TransactionProcessor interface {
 	SettlePendingTransaction(ctx context.Context, transactionID string) (*domain.Transaction, error)
 	CancelPendingTransaction(ctx context.Context, transactionID string) (*domain.Transaction, error)
 	ReverseTransaction(ctx context.Context, originalTransactionID string, req ReversalRequest) (*domain.Transaction, error)
+}
+
+type BalanceCalculator interface {
+	GetCurrentBalance(ctx context.Context, accountID uuid.UUID, currency string) (*domain.Balance, error)
+	GetCurrentBalanceInTx(ctx context.Context, tx pgx.Tx, accountID uuid.UUID, currency string) (*domain.Balance, error)
+	GetHistoricalBalance(ctx context.Context, accountID uuid.UUID, currency string, asOf time.Time) (*domain.Balance, error)
+	GetMultiCurrencyBalance(ctx context.Context, accountID uuid.UUID) (map[string]*domain.Balance, error)
 }
 
 // PostgresTransactionProcessor implements TransactionProcessor using PostgreSQL

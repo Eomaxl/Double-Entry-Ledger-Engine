@@ -1,9 +1,8 @@
-package service
+package transaction
 
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/domain"
 	"github.com/google/uuid"
@@ -11,20 +10,20 @@ import (
 	"go.uber.org/zap"
 )
 
-// SettlePendingTransaction settles a pending transaction by transitioning it to settled state
-func (p *PostgresTransactionProcessor) SettlePendingTransaction(ctx context.Context, transactionID string) (*domain.Transaction, error) {
+// CancelPendingTransaction cancels a pending transaction by transitioning it to cancelled state
+func (p *PostgresTransactionProcessor) CancelPendingTransaction(ctx context.Context, transactionID string) (*domain.Transaction, error) {
 	txnUUID, err := parseUUIDField("transaction_id", transactionID)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.SettlePendingTransactionUUID(ctx, txnUUID)
+	return p.CancelPendingTransactionUUID(ctx, txnUUID)
 }
 
-// SettlePendingTransactionUUID settles a pending transaction using a typed UUID.
-func (p *PostgresTransactionProcessor) SettlePendingTransactionUUID(ctx context.Context, transactionID uuid.UUID) (*domain.Transaction, error) {
+// CancelPendingTransactionUUID cancels a pending transaction using a typed UUID.
+func (p *PostgresTransactionProcessor) CancelPendingTransactionUUID(ctx context.Context, transactionID uuid.UUID) (*domain.Transaction, error) {
 	transactionIDStr := transactionID.String()
-	p.logger.Info("settling pending transaction",
+	p.logger.Info("cancelling pending transaction",
 		zap.String("transaction_id", transactionIDStr))
 
 	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{
@@ -54,8 +53,7 @@ func (p *PostgresTransactionProcessor) SettlePendingTransactionUUID(ctx context.
 		}
 	}
 
-	settledAtTime := time.Now().UTC()
-	if err := p.ledgerRepo.UpdateTransactionSettled(ctx, tx, transactionID, settledAtTime); err != nil {
+	if err := p.ledgerRepo.UpdateTransactionCancelled(ctx, tx, transactionID); err != nil {
 		p.logger.Error("failed to update transaction state",
 			zap.Error(err),
 			zap.String("transaction_id", transactionIDStr))
@@ -70,11 +68,11 @@ func (p *PostgresTransactionProcessor) SettlePendingTransactionUUID(ctx context.
 		return nil, fmt.Errorf("failed to get updated transaction: %w", err)
 	}
 
-	if err := p.eventPublisher.PublishTransactionSettled(ctx, updatedTxn); err != nil {
-		p.logger.Error("failed to emit transaction settled event",
+	if err := p.eventPublisher.PublishTransactionCancelled(ctx, updatedTxn); err != nil {
+		p.logger.Error("failed to emit transaction cancelled event",
 			zap.Error(err),
 			zap.String("transaction_id", transactionIDStr))
-		return nil, fmt.Errorf("failed to emit transaction settled event: %w", err)
+		return nil, fmt.Errorf("failed to emit transaction cancelled event: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -84,7 +82,7 @@ func (p *PostgresTransactionProcessor) SettlePendingTransactionUUID(ctx context.
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	p.logger.Info("transaction settled successfully",
+	p.logger.Info("transaction cancelled successfully",
 		zap.String("transaction_id", transactionIDStr))
 
 	return updatedTxn, nil

@@ -9,7 +9,9 @@ import (
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/database"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/metrics"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/repository"
-	"github.com/Eomaxl/double-entry-ledger-engine/internal/service"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/balance"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/query"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/transaction"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -29,10 +31,10 @@ type Router struct {
 // NewRouter creates a new API router with all handlers and middleware
 func NewRouter(
 	dbProbe database.PoolProbe,
-	transactionProcessor service.TransactionProcessor,
+	transactionProcessor transaction.TransactionProcessor,
 	accountRepo repository.AccountRepository,
-	balanceCalculator service.BalanceCalculator,
-	queryService service.QueryService,
+	balanceCalculator balance.BalanceCalculator,
+	queryService query.QueryService,
 	config *config.Config,
 	metrics *metrics.Metrics,
 	logger *zap.Logger,

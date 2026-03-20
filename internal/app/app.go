@@ -14,7 +14,9 @@ import (
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/metrics"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/postgres"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/tracing"
-	"github.com/Eomaxl/double-entry-ledger-engine/internal/service"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/balance"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/query"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/transaction"
 	"go.uber.org/zap"
 )
 
@@ -66,8 +68,8 @@ func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
 	ledgerRepo := postgres.NewPostgresLedgerRepository()
 
 	validator := domain.NewTransactionValidator(cfg.Currencies.Supported)
-	balanceCalculator := service.NewPostgresBalanceCalculator(db.Pool, logger, appMetrics)
-	transactionProcessor := service.NewPostgresTransactionProcessor(
+	balanceCalculator := balance.NewPostgresBalanceCalculator(db.Pool, logger, appMetrics)
+	transactionProcessor := transaction.NewPostgresTransactionProcessor(
 		db.Pool,
 		validator,
 		accountRepo,
@@ -79,7 +81,7 @@ func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
 		logger,
 		appMetrics,
 	)
-	queryService := service.NewPostgresQueryService(db.Pool, ledgerRepo, logger)
+	queryService := query.NewPostgresQueryService(db.Pool, ledgerRepo, logger)
 
 	dbProbe := database.NewPoolProbe(db.Pool)
 	router := api.NewRouter(

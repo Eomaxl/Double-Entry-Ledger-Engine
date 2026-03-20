@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/domain"
-	"github.com/Eomaxl/double-entry-ledger-engine/internal/service"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/transaction"
 	"github.com/gin-gonic/gin"
 )
 
@@ -232,7 +232,7 @@ func ConvertToAPIError(err error) *APIError {
 	}
 
 	// Handle insufficient balance errors
-	if insufficientErr, ok := err.(*service.InsufficientBalanceError); ok {
+	if insufficientErr, ok := err.(*transaction.InsufficientBalanceError); ok {
 		return InsufficientBalanceError(
 			insufficientErr.AccountID,
 			insufficientErr.Currency,

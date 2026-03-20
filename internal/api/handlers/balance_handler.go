@@ -6,7 +6,7 @@ import (
 
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/api/errors"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/infrastructure/metrics"
-	"github.com/Eomaxl/double-entry-ledger-engine/internal/service"
+	"github.com/Eomaxl/double-entry-ledger-engine/internal/service/balance"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -14,14 +14,14 @@ import (
 
 // BalanceHandler handles HTTP requests for balance operations
 type BalanceHandler struct {
-	balanceCalculator service.BalanceCalculator
+	balanceCalculator balance.BalanceCalculator
 	metrics           *metrics.Metrics
 	logger            *zap.Logger
 }
 
 // NewBalanceHandler creates a new balance handler
 func NewBalanceHandler(
-	balanceCalculator service.BalanceCalculator,
+	balanceCalculator balance.BalanceCalculator,
 	metrics *metrics.Metrics,
 	logger *zap.Logger,
 ) *BalanceHandler {
