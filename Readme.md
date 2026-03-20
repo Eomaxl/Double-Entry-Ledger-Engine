@@ -137,6 +137,55 @@ Target performance characteristics:
 - **Latency**: Sub-second p99 latency
 - **Scalability**: Horizontal scaling via stateless application servers
 
+## Synthetic Traffic Generator
+
+The repository includes a built-in synthetic traffic generator at `cmd/trafficgen` for controlled load tests against the running API.
+
+### Current setup (local Docker)
+
+Based on `docker-compose.yml`, the current benchmark setup is:
+- **App service**: `ledger-engine` (Go service, exposed on `:8080`)
+- **Database**: `postgres:15-alpine`
+- **Messaging**: `nats:2.10-alpine` (currently disabled in app via `NATS_ENABLED=false`)
+- **Traffic profile service**: `trafficgen` (Go 1.25 Alpine)
+- **Trafficgen defaults**:
+  - `TRAFFICGEN_DURATION=30s`
+  - `TRAFFICGEN_CONCURRENCY=20`
+  - `TRAFFICGEN_RPS=1000` (target request rate)
+  - `TRAFFICGEN_BATCH_SIZE=5`
+  - `TRAFFICGEN_ACCOUNTS=100`
+
+### How to run
+
+1. Start core services:
+   ```bash
+   docker compose up -d postgres nats ledger-engine
+   ```
+2. Run synthetic traffic from Docker Compose profile:
+   ```bash
+   docker compose --profile trafficgen run --rm trafficgen
+   ```
+3. Optional local run (without profile container):
+   ```bash
+   go run ./cmd/trafficgen
+   ```
+4. Read generated metrics from:
+   - `trafficgen_results.csv`
+   - `trafficgen_results_local.csv`
+
+### Current measured throughput and latency
+
+Latest measured snapshots from checked-in result files:
+
+| Scenario                                         | Duration | Requests | Success | Fail | Effective RPS | Effective QPS | p95 Latency | p99 Latency |
+| ------------------------------------------------ | -------- | -------: | ------: | ---: | -------------:| ------------: | -----------:| ----------: |
+| Local short run (`trafficgen_results_local.csv`) | 5.003s   | 999      | 999     | 0    | ~199.68       | ~199.68       | 5.699 ms    | 33.572 ms   |
+| Docker profile run (`trafficgen_results.csv`)    | 30.003s  | 24,763   | 24,759  | 4    | ~825.35       | ~825.35       | 12.621 ms   | 22.436 ms   |
+
+Notes:
+- For this workload, **QPS is treated equal to request throughput** (each generated API request is a transaction-post workload unit).
+- The configured target (`TRAFFICGEN_RPS=1000`) is higher than the currently observed steady throughput (~825 RPS), which indicates the stack is near current capacity under this profile.
+
 ## Status
 
 🚧 **Under Active Development** 🚧
