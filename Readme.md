@@ -35,30 +35,54 @@ The Double entry ledger engine is a high integrity, immutable, multi-currency le
 
 ## Architecture
 
-The system follows a clean layered architecture:
+The system currently follows a layered Go architecture with explicit composition and adapter boundaries:
 
 ```
-┌─────────────────────────────────────────┐
-│         API Layer (HTTP/REST)           │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│        Application Service Layer        │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│          Domain Logic Layer             │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│         Data Access Layer               │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│      Infrastructure Layer               │
-│  (PostgreSQL, NATS, Metrics, Logging)   │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│              cmd/server/main.go              │
+│        Thin entrypoint and process boot      │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│                internal/app                  │
+│    Dependency wiring, startup, shutdown      │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│                internal/api                  │
+│   Gin router, handlers, middleware, errors   │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│              internal/service                │
+│   Transaction processing, balance queries,   │
+│   orchestration of domain and repositories   │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│              internal/domain                 │
+│    Core models, validation rules, balances   │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│            internal/repository               │
+│         Repository contracts/interfaces      │
+└──────────────────────┬───────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────┐
+│           internal/infrastructure            │
+│ PostgreSQL, logging, tracing, metrics,       │
+│ and event publisher adapters                 │
+└──────────────────────────────────────────────┘
 ```
+
+Current runtime notes:
+
+- HTTP transport is implemented with Gin under `internal/api`.
+- Application startup and graceful shutdown are coordinated in `internal/app`.
+- PostgreSQL is the primary persistence adapter.
+- Event publishing is explicitly optional. When disabled, the application uses a no-op publisher; when enabled, a concrete event adapter must be supplied.
+- Liveness and readiness endpoints are exposed separately from the general health endpoint.
 
 ## Technology Stack
 
@@ -76,20 +100,26 @@ The system follows a clean layered architecture:
 ```
 .
 ├── cmd/
-│   └── server/          # Application entry point
+│   └── server/              # Application entry point
 ├── internal/
-│   ├── config/          # Configuration management
-│   ├── domain/          # Domain models and business logic
-│   ├── repository/      # Data access layer
-│   ├── service/         # Application services
-│   ├── api/             # HTTP handlers and routing
-│   └── infrastructure/  # Database, NATS, logging, metrics
-├── pkg/
-│   └── types/           # Shared types and utilities
-├── migrations/          # Database migration files
-├── docker-compose.yml   # Local development services
-├── Makefile            # Development commands
-└── README.md
+│   ├── app/                 # Application bootstrap and dependency wiring
+│   ├── api/                 # HTTP router, handlers, middleware, API errors
+│   ├── config/              # Configuration loading and validation
+│   ├── domain/              # Core business models and validation rules
+│   ├── repository/          # Repository contracts/interfaces
+│   ├── service/             # Application services and use-case orchestration
+│   └── infrastructure/
+│       ├── database/        # PostgreSQL connection and migrations
+│       ├── events/          # Event publisher interfaces/adapters
+│       ├── logging/         # Logger initialization and structured logging helpers
+│       ├── metrics/         # Prometheus metrics
+│       ├── postgres/        # PostgreSQL repository implementations
+│       └── tracing/         # OpenTelemetry tracing setup
+├── migrations/              # Database migration files
+├── docker-compose.yml       # Local development services
+├── go.mod
+├── go.sum
+└── Readme.md
 ```
 
 

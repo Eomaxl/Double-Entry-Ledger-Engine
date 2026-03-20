@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ledger-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ledger
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: ledger-nats
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"  # Client connections
+      - "8222:8222"  # HTTP monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ledger-engine:
+    build: .
+    container_name: ledger-engine
+    ports:
+      - "8080:8080"
+    environment:
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ledger
+      DB_SSL_MODE: disable
+      DB_MAX_CONNECTIONS: 25
+      DB_MIN_CONNECTIONS: 5
+      DB_MAX_CONN_LIFETIME: 1h
+      DB_MAX_CONN_IDLE_TIME: 30m
+      
+      # NATS Configuration
+      NATS_URL: nats://nats:4222
+      NATS_SUBJECT: ledger.events
+      
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      
+      # Idempotency Configuration
+      IDEMPOTENCY_RETENTION: 24h
+      
+      # Performance Configuration
+      MAX_BATCH_SIZE: 1000
+      BALANCE_QUERY_TIMEOUT: 100ms
+      TRANSACTION_TIMEOUT: 5s
+      ENABLE_BALANCE_SNAPSHOTS: false
+      
+      # Supported Currencies
+      SUPPORTED_CURRENCIES: USD,EUR,GBP,JPY,CNY,AUD,CAD,CHF,SEK,NZD
+      
+      # Logging Configuration
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      
+      # Authentication Configuration
+      AUTH_ENABLE_API_KEY: true
+      AUTH_ENABLE_JWT: false
+      AUTH_API_KEYS: "dev-key-12345:development:transaction:post,transaction:read,transaction:settle,transaction:cancel,transaction:reverse,account:create,account:read,account:update,balance:read"
+      
+      # Tracing Configuration (disabled by default)
+      TRACING_ENABLED: false
+      TRACING_SERVICE_NAME: double-entry-ledger-engine
+      TRACING_ENDPOINT: http://localhost:4318/v1/traces
+      TRACING_ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

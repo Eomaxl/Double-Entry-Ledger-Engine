@@ -1,0 +1,16 @@
+.gocache/
+
+# Go build artifacts
+bin/
+*.test
+*.out
+coverage.out
+
+# Environment files
+.env
+.env.*
+
+# OS / editor files
+.DS_Store
+.idea/
+.vscode/
