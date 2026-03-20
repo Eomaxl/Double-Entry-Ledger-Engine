@@ -133,10 +133,90 @@ Current runtime notes:
 ## Performance
 
 Current benchmark characteristics (local Docker setup):
-- **Throughput (effective)**: ~825 RPS / QPS (30s run, batch size 5, 24,759 successful requests)
-- **Latency p95**: 12.621 ms
-- **Latency p99**: 22.436 ms
-- **Error rate**: 4 failures out of 24,763 requests (~0.016%)
+- **Max stable request throughput (RPS/QPS)**: ~905.05 (18,101 successes in 20s at target 1200 RPS)
+- **Max stable transaction throughput (TPS)**: ~4,525.25 (RPS x batch size 5)
+- **Latency p95 at max stable step**: 31.164 ms
+- **Latency p99 at max stable step**: 50.803 ms
+- **Error rate at max stable step**: 6 failures out of 18,107 requests (~0.033%)
+- **Benchmark artifact**: `benchmarks/ramp_summary_20260320_131433.csv`
+
+## AWS Free-Tier Portfolio Deployment
+
+This project includes a recruiter-focused deployment path for a single-node, zero-minimal-cost demo on AWS.
+
+### Deployment objective
+
+- Standalone public demo endpoint on one EC2 free-tier instance
+- Observability included (Prometheus + Grafana) for performance proof
+- Repeatable synthetic benchmark to show max stable RPS/TPS
+
+### Free-tier cost controls
+
+- Use one `t2.micro`/`t3.micro` EC2 instance only (as per your account free-tier eligibility)
+- Use one `gp3` EBS volume (20 GB)
+- Avoid paid services (ALB, NAT Gateway, RDS)
+- Configure AWS Budget alerts (`$0.01`, `$1`, `$5`)
+- Restrict security group inbound:
+  - SSH `22` from your IP only
+  - App `8080` public for demo
+  - Grafana `3000` optional (or keep private)
+
+### EC2 bootstrap and deploy steps
+
+1. SSH into EC2 and install Docker:
+   ```bash
+   chmod +x scripts/ec2-bootstrap.sh
+   sudo ./scripts/ec2-bootstrap.sh
+   ```
+2. Clone repo and prepare environment:
+   ```bash
+   git clone https://github.com/<your-org-or-user>/<your-repo>.git
+   cd <your-repo>
+   cp .env.production.example .env
+   ```
+3. Edit `.env` with secure values, then deploy:
+   ```bash
+   chmod +x scripts/deploy-portfolio.sh
+   ./scripts/deploy-portfolio.sh
+   ```
+
+### Observability (free-tier self-hosted)
+
+Start observability profile:
+
+```bash
+docker compose --profile observability up -d prometheus grafana node-exporter
+```
+
+- Prometheus: `http://<EC2_PUBLIC_IP>:9090`
+- Grafana: `http://<EC2_PUBLIC_IP>:3000`
+- Provisioned dashboard: `monitoring/grafana/dashboards/portfolio-overview.json`
+
+### Max-throughput benchmark command
+
+Run the built-in ramp benchmark:
+
+```bash
+chmod +x scripts/benchmark-ramp.sh
+./scripts/benchmark-ramp.sh
+```
+
+This runs target steps `200 -> 400 -> 600 -> 800 -> 1000 -> 1200` RPS and writes:
+- per-step result CSV files in `benchmarks/`
+- summary file (latest: `benchmarks/ramp_summary_20260320_131433.csv`)
+
+### Latest measured ramp snapshot
+
+| Target RPS | Success (20s) | Effective RPS | Effective TPS (batch=5) | p95 (ms) | p99 (ms) | Failures |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 200 | 3,999 | 199.95 | 999.75 | 5.747 | 33.946 | 0 |
+| 400 | 7,932 | 396.60 | 1,983.00 | 8.962 | 34.348 | 0 |
+| 600 | 11,361 | 568.05 | 2,840.25 | 7.993 | 24.492 | 1 |
+| 800 | 14,443 | 722.15 | 3,610.75 | 18.546 | 42.900 | 1 |
+| 1000 | 15,768 | 788.40 | 3,942.00 | 28.600 | 64.206 | 5 |
+| 1200 | 18,101 | 905.05 | 4,525.25 | 31.164 | 50.803 | 6 |
+
+For this workload, QPS equals request throughput because each API call is one batch-post request unit.
 
 ## Synthetic Traffic Generator
 

@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build test test-unit test-integration test-race lint fmt tidy clean trafficgen trafficgen-docker
+.PHONY: help build test test-unit test-integration test-race lint fmt tidy clean trafficgen trafficgen-docker deploy-portfolio observability-up observability-down benchmark-ramp
 
 GO ?= go
 
@@ -17,6 +17,10 @@ help:
 	@echo "  make clean             - Clean test cache"
 	@echo "  make trafficgen        - Run synthetic traffic generator"
 	@echo "  make trafficgen-docker - Run traffic generator in Docker profile"
+	@echo "  make deploy-portfolio  - Deploy core stack for portfolio demo"
+	@echo "  make observability-up  - Start Prometheus/Grafana/node-exporter"
+	@echo "  make observability-down- Stop observability profile services"
+	@echo "  make benchmark-ramp    - Run step-load synthetic benchmark"
 
 build:
 	$(GO) build ./...
@@ -52,3 +56,15 @@ trafficgen:
 
 trafficgen-docker:
 	docker compose --profile trafficgen up --build trafficgen
+
+deploy-portfolio:
+	./scripts/deploy-portfolio.sh
+
+observability-up:
+	docker compose --profile observability up -d prometheus grafana node-exporter
+
+observability-down:
+	docker compose --profile observability stop prometheus grafana node-exporter
+
+benchmark-ramp:
+	./scripts/benchmark-ramp.sh

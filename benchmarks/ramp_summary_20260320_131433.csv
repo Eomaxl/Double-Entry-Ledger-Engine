@@ -1,0 +1,7 @@
+rps_target,duration,requests_total,success_total,failed_total,avg_latency_ms,p95_latency_ms,p99_latency_ms,batch_size,result_file
+200,20s,3999,3999,0,4.711,5.747,33.946,5,benchmarks/trafficgen_rps_200.csv
+400,20s,7932,7932,0,4.638,8.962,34.348,5,benchmarks/trafficgen_rps_400.csv
+600,20s,11362,11361,1,4.442,7.993,24.492,5,benchmarks/trafficgen_rps_600.csv
+800,20s,14444,14443,1,7.028,18.546,42.900,5,benchmarks/trafficgen_rps_800.csv
+1000,20s,15773,15768,5,11.849,28.600,64.206,5,benchmarks/trafficgen_rps_1000.csv
+1200,20s,18107,18101,6,15.820,31.164,50.803,5,benchmarks/trafficgen_rps_1200.csv
