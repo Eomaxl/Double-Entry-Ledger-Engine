@@ -13,20 +13,27 @@ import (
 	"go.uber.org/zap"
 )
 
-func main() {
-	// Load configuration
+func bootstrap() (*config.Config, *zap.Logger, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		return nil, nil, err
+	}
+
+	logger, err := logging.NewLogger(cfg.Logging)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cfg, logger, nil
+}
+
+func main() {
+	cfg, logger, err := bootstrap()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bootstrap server: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Initialize logger
-	logger, err := logging.NewLogger(cfg.Logging)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
-	}
 	defer logger.Sync()
 
 	logger.Info("starting double-entry ledger engine",
