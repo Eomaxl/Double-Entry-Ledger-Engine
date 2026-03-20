@@ -9,9 +9,14 @@ coverage.out
 # Environment files
 .env
 .env.*
+!.env.production.example
 
 # OS / editor files
 .DS_Store
 .idea/
 .vscode/
 /docs/
+
+# Ignore all markdown docs except primary README.
+*.md
+!Readme.md

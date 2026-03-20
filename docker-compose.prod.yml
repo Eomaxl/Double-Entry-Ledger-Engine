@@ -1,0 +1,97 @@
+services:
+  ledger-engine:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Database Configuration (RDS)
+      DB_HOST: ${RDS_ENDPOINT}
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ledger
+      DB_SSL_MODE: require
+      DB_MAX_CONNECTIONS: 25
+      DB_MIN_CONNECTIONS: 5
+      DB_MAX_CONN_LIFETIME: 1h
+      DB_MAX_CONN_IDLE_TIME: 30m
+
+      # NATS Configuration (disabled)
+      NATS_ENABLED: false
+
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+
+      # Idempotency Configuration
+      IDEMPOTENCY_RETENTION: 24h
+
+      # Performance Configuration
+      MAX_BATCH_SIZE: 1000
+      BALANCE_QUERY_TIMEOUT: 100ms
+      TRANSACTION_TIMEOUT: 5s
+      ENABLE_BALANCE_SNAPSHOTS: false
+
+      # Supported Currencies
+      SUPPORTED_CURRENCIES: USD,EUR,GBP,JPY,CNY,AUD,CAD,CHF,SEK,NZD
+
+      # Logging Configuration
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+
+      # Authentication Configuration
+      AUTH_ENABLE_API_KEY: true
+      AUTH_ENABLE_JWT: false
+      AUTH_API_KEYS: ${AUTH_API_KEYS}
+
+      # Tracing (disabled)
+      TRACING_ENABLED: false
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.5
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
