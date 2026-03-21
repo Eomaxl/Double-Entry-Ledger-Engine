@@ -1,0 +1,9 @@
+target_rps,duration_ms,requests_total,success_total,failed_total,effective_rps,effective_tps,p95_ms,p99_ms,fail_pct,csv_file
+10,45528,449,449,0,9.86,49.31,658.247,748.510,0.00,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_10.csv
+20,45542,899,897,2,19.70,98.48,726.794,829.951,0.22,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_20.csv
+30,45623,1350,1348,2,29.55,147.73,645.222,731.507,0.15,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_30.csv
+40,47540,1452,1441,11,30.31,151.56,712.766,1152.781,0.76,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_40.csv
+50,46873,1454,1451,3,30.96,154.78,677.790,750.344,0.21,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_50.csv
+60,47012,1456,1454,2,30.93,154.64,678.336,949.973,0.14,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_60.csv
+80,47228,1451,1447,4,30.64,153.19,741.244,860.957,0.28,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_80.csv
+100,46911,1429,1426,3,30.40,151.99,688.357,952.667,0.21,/Users/souravmansingh/DoubleEntryLedgerEngine/benchmarks/aws_capacity_rps_100.csv
