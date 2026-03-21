@@ -132,13 +132,18 @@ Current runtime notes:
 
 ## Performance
 
-Current benchmark characteristics (local Docker setup):
-- **Max stable request throughput (RPS/QPS)**: ~905.05 (18,101 successes in 20s at target 1200 RPS)
-- **Max stable transaction throughput (TPS)**: ~4,525.25 (RPS x batch size 5)
-- **Latency p95 at max stable step**: 31.164 ms
-- **Latency p99 at max stable step**: 50.803 ms
-- **Error rate at max stable step**: 6 failures out of 18,107 requests (~0.033%)
-- **Benchmark artifact**: `benchmarks/ramp_summary_20260320_131433.csv`
+Current benchmark characteristics (AWS free-tier deployment with RDS):
+- **Max stable request throughput (RPS/QPS)**: ~30.96
+- **Max stable transaction throughput (TPS)**: ~154.78 (RPS x batch size 5)
+- **Latency p95 at max stable step**: 677.790 ms
+- **Latency p99 at max stable step**: 750.344 ms
+- **Error rate at max stable step**: ~0.21%
+- **Benchmark artifact**: `benchmarks/aws_capacity_summary_1774011892.csv`
+
+## Scaling
+
+- End-to-end scaling strategy, target architecture, and migration path are documented in `SCALING.md`.
+- See [`SCALING.md`](SCALING.md) for detailed capacity goals from free-tier to 100K+ TPS architecture.
 
 ## AWS Free-Tier Portfolio Deployment
 
