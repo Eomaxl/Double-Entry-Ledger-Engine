@@ -55,7 +55,7 @@ trafficgen:
 	$(GO) run ./cmd/trafficgen $(ARGS)
 
 trafficgen-docker:
-	docker compose --profile trafficgen up --build trafficgen
+	docker compose --profile trafficgen run --rm --no-build trafficgen
 
 deploy-portfolio:
 	./scripts/deploy-portfolio.sh

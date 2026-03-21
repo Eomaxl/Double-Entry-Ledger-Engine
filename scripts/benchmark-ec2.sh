@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# EC2 load test: does NOT use docker compose and does NOT build the app image.
+# - TRAFFICGEN_RUNNER=go     → only `go run` (no Docker).
+# - TRAFFICGEN_RUNNER=docker → `docker run` a pre-built Go toolchain image only
+#   (pull if missing via --pull; never a docker build of ledger-engine).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,6 +23,41 @@ CURRENCY="${CURRENCY:-USD}"
 MIN_AMOUNT="${MIN_AMOUNT:-1}"
 MAX_AMOUNT="${MAX_AMOUNT:-100}"
 
+# How to run trafficgen: "go" (needs Go on EC2) or "docker" (uses golang image, no ledger-engine build).
+TRAFFICGEN_RUNNER="${TRAFFICGEN_RUNNER:-go}"
+TRAFFICGEN_GO_IMAGE="${TRAFFICGEN_GO_IMAGE:-golang:1.25-alpine}"
+# docker run pull policy: missing | never | always (never = use only local images, no pull)
+DOCKER_PULL_POLICY="${DOCKER_PULL_POLICY:-missing}"
+
+run_trafficgen() {
+  local csv_rel="${1}"
+  local log_file="${2}"
+  shift 2
+
+  if [[ "${TRAFFICGEN_RUNNER}" == "docker" ]]; then
+    docker run --rm \
+      --pull "${DOCKER_PULL_POLICY}" \
+      --network host \
+      -v "${ROOT_DIR}:/app" \
+      -w /app \
+      -e TRAFFICGEN_BASE_URL="${BASE_URL}" \
+      -e TRAFFICGEN_API_KEY="${API_KEY}" \
+      -e TRAFFICGEN_DURATION="${DURATION}" \
+      -e TRAFFICGEN_CONCURRENCY="${CONCURRENCY}" \
+      -e TRAFFICGEN_RPS="${RPS}" \
+      -e TRAFFICGEN_BATCH_SIZE="${BATCH_SIZE}" \
+      -e TRAFFICGEN_ACCOUNTS="${ACCOUNTS}" \
+      -e TRAFFICGEN_CURRENCY="${CURRENCY}" \
+      -e TRAFFICGEN_MIN_AMOUNT="${MIN_AMOUNT}" \
+      -e TRAFFICGEN_MAX_AMOUNT="${MAX_AMOUNT}" \
+      -e "TRAFFICGEN_CSV_OUTPUT=/app/${csv_rel}" \
+      "${TRAFFICGEN_GO_IMAGE}" \
+      sh -c "go run ./cmd/trafficgen" | tee "${log_file}"
+  else
+    go run ./cmd/trafficgen "$@" -csv-output "${csv_rel}" | tee "${log_file}"
+  fi
+}
+
 SUMMARY_FILE="${OUT_DIR}/summary.csv"
 echo "target_rps,duration_ms,requests_total,success_total,failed_total,effective_rps,effective_tps,p95_ms,p99_ms,fail_pct,csv_file,log_file" > "${SUMMARY_FILE}"
 
@@ -26,15 +65,17 @@ echo "Starting EC2 benchmark run..."
 echo "Output directory: ${OUT_DIR}"
 echo "Base URL: ${BASE_URL}"
 echo "Steps: ${RPS_STEPS}"
+echo "Trafficgen runner: ${TRAFFICGEN_RUNNER}"
 
 for RPS in ${RPS_STEPS}; do
-  CSV_FILE="${OUT_DIR}/trafficgen_rps_${RPS}.csv"
+  CSV_REL="${OUT_DIR}/trafficgen_rps_${RPS}.csv"
+  CSV_FILE="${CSV_REL}"
   LOG_FILE="${OUT_DIR}/trafficgen_rps_${RPS}.log"
 
   echo ""
   echo "==> Running step target RPS=${RPS}"
 
-  go run ./cmd/trafficgen \
+  run_trafficgen "${CSV_REL}" "${LOG_FILE}" \
     -base-url "${BASE_URL}" \
     -api-key "${API_KEY}" \
     -duration "${DURATION}" \
@@ -44,8 +85,7 @@ for RPS in ${RPS_STEPS}; do
     -accounts "${ACCOUNTS}" \
     -currency "${CURRENCY}" \
     -min-amount "${MIN_AMOUNT}" \
-    -max-amount "${MAX_AMOUNT}" \
-    -csv-output "${CSV_FILE}" | tee "${LOG_FILE}"
+    -max-amount "${MAX_AMOUNT}"
 
   DURATION_MS="$(awk -F, '$1=="duration_ms"{print $2}' "${CSV_FILE}")"
   REQUESTS_TOTAL="$(awk -F, '$1=="requests_total"{print $2}' "${CSV_FILE}")"

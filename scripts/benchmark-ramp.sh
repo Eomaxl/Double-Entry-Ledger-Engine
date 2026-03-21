@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Step-load benchmark via docker compose. Uses --no-build so no Dockerfile/build runs
+# on the host (ledger-engine must already exist locally, e.g. pulled from ECR).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,7 +22,7 @@ for RPS in "${STEPS[@]}"; do
   OUT_FILE="benchmarks/trafficgen_rps_${RPS}.csv"
   echo "Step target RPS=${RPS}"
 
-  docker compose run --rm \
+  docker compose run --rm --no-build \
     -e TRAFFICGEN_BASE_URL=http://ledger-engine:8080 \
     -e TRAFFICGEN_API_KEY=dev-key-12345 \
     -e TRAFFICGEN_DURATION="${DURATION}" \
