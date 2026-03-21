@@ -15,16 +15,162 @@ components:
       in: header
       name: X-API-Key
   schemas:
-    GenericObject:
-      type: object
-      additionalProperties: true
-    APIError:
+    APIErrorEnvelope:
       type: object
       properties:
         error:
+          $ref: "#/components/schemas/APIError"
+    APIError:
+      type: object
+      properties:
+        code:
           type: string
+          example: INVALID_REQUEST
         message:
           type: string
+          example: Invalid request format
+        details:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+    EntryRequest:
+      type: object
+      required: [account_id, currency_code, amount, entry_type]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        currency_code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        amount:
+          type: string
+          example: "100.00"
+        entry_type:
+          type: string
+          enum: [debit, credit]
+        description:
+          type: string
+    PostTransactionRequest:
+      type: object
+      required: [state, entries]
+      properties:
+        idempotency_key:
+          type: string
+        state:
+          type: string
+          enum: [pending, settled]
+        entries:
+          type: array
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/EntryRequest"
+        metadata:
+          type: object
+          additionalProperties: true
+    BatchTransactionRequest:
+      type: object
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PostTransactionRequest"
+    ReversalRequest:
+      type: object
+      required: [state]
+      properties:
+        idempotency_key:
+          type: string
+        state:
+          type: string
+          enum: [pending, settled]
+        description:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    AccountCurrencyConfig:
+      type: object
+      required: [currency_code]
+      properties:
+        currency_code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        allow_negative:
+          type: boolean
+    CreateAccountRequest:
+      type: object
+      required: [account_type, currencies]
+      properties:
+        account_type:
+          type: string
+          enum: [asset, liability, equity, revenue, expense]
+        currencies:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AccountCurrencyConfig"
+        metadata:
+          type: object
+          additionalProperties: true
+    UpdateAccountMetadataRequest:
+      type: object
+      required: [metadata]
+      properties:
+        metadata:
+          type: object
+          additionalProperties: true
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    BatchTransactionResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        count:
+          type: integer
+    ListAccountsResponse:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        count:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+    MultiCurrencyBalanceResponse:
+      type: object
+      properties:
+        account_id:
+          type: string
+        balances:
+          type: object
+          additionalProperties:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+    GenericObject:
+      type: object
+      additionalProperties: true
 paths:
   /health:
     get:
@@ -36,7 +182,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericObject"
+                type: object
+                additionalProperties: true
   /livez:
     get:
       summary: Liveness probe
@@ -73,16 +220,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenericObject"
+              $ref: "#/components/schemas/PostTransactionRequest"
       responses:
         "201":
           description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
         "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/APIError"
+                $ref: "#/components/schemas/APIErrorEnvelope"
     get:
       summary: List transactions
       parameters:
@@ -97,6 +248,10 @@ paths:
       responses:
         "200":
           description: Transactions list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/transactions/batch:
     post:
       summary: Create transactions in batch
@@ -105,10 +260,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenericObject"
+              $ref: "#/components/schemas/BatchTransactionRequest"
       responses:
         "201":
           description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchTransactionResponse"
   /v1/transactions/{id}:
     get:
       summary: Get transaction by ID
@@ -121,6 +280,10 @@ paths:
       responses:
         "200":
           description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/transactions/{id}/settle:
     post:
       summary: Settle a pending transaction
@@ -133,6 +296,10 @@ paths:
       responses:
         "200":
           description: Transaction settled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/transactions/{id}/cancel:
     post:
       summary: Cancel a pending transaction
@@ -145,6 +312,10 @@ paths:
       responses:
         "200":
           description: Transaction cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/transactions/{id}/reverse:
     post:
       summary: Reverse a transaction
@@ -154,9 +325,19 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReversalRequest"
       responses:
-        "200":
+        "201":
           description: Transaction reversed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/accounts:
     post:
       summary: Create account
@@ -165,15 +346,40 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenericObject"
+              $ref: "#/components/schemas/CreateAccountRequest"
       responses:
         "201":
           description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
     get:
       summary: List accounts
+      parameters:
+        - name: currency_code
+          in: query
+          schema:
+            type: string
+        - name: account_type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Accounts list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAccountsResponse"
   /v1/accounts/{id}:
     get:
       summary: Get account by ID
@@ -186,6 +392,10 @@ paths:
       responses:
         "200":
           description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/accounts/{id}/metadata:
     patch:
       summary: Update account metadata
@@ -200,10 +410,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenericObject"
+              $ref: "#/components/schemas/UpdateAccountMetadataRequest"
       responses:
         "200":
           description: Account metadata updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
   /v1/accounts/{id}/balances:
     get:
       summary: Get multi-currency balances
@@ -216,6 +430,10 @@ paths:
       responses:
         "200":
           description: Balances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MultiCurrencyBalanceResponse"
   /v1/accounts/{id}/balances/{currency}:
     get:
       summary: Get current balance for currency
@@ -233,6 +451,10 @@ paths:
       responses:
         "200":
           description: Current balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
   /v1/accounts/{id}/balances/{currency}/history:
     get:
       summary: Get historical balance for currency
@@ -247,7 +469,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: timestamp
+        - name: as_of
           in: query
           required: true
           schema:
@@ -256,3 +478,7 @@ paths:
       responses:
         "200":
           description: Historical balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
