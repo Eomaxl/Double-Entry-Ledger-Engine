@@ -139,6 +139,41 @@
       ],
       "title": "Host CPU Usage",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum by (method, endpoint, status) (increase(ledger_http_requests_total{method=~\"$method\", endpoint=~\"$endpoint\"}[$__range]))",
+          "format": "table",
+          "legendFormat": "{{method}} {{endpoint}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "API Endpoint Traffic (Range Total)",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        }
+      ],
+      "type": "table"
     }
   ],
   "refresh": "5s",
@@ -149,7 +184,38 @@
     "benchmark"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "method",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(ledger_http_requests_total, method)"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 2
+      },
+      {
+        "name": "endpoint",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(ledger_http_requests_total, endpoint)"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 2
+      }
+    ]
   },
   "time": {
     "from": "now-15m",
