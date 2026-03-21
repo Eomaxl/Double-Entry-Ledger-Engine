@@ -310,11 +310,14 @@ func getRequiredPermission(method, path string) string {
 
 // isHealthEndpoint checks if the path is a health/monitoring endpoint
 func isHealthEndpoint(path string) bool {
-	healthPaths := []string{"/health", "/metrics", "/livez", "/readyz", "/v1/system/info"}
+	healthPaths := []string{"/health", "/metrics", "/livez", "/readyz", "/v1/system/info", "/openapi.yaml"}
 	for _, healthPath := range healthPaths {
 		if path == healthPath {
 			return true
 		}
+	}
+	if strings.HasPrefix(path, "/docs") {
+		return true
 	}
 	return false
 }

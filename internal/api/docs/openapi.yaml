@@ -1,0 +1,258 @@
+openapi: 3.0.3
+info:
+  title: Double Entry Ledger Engine API
+  description: API reference for the double-entry ledger engine.
+  version: "0.1.0"
+servers:
+  - url: http://localhost:8080
+    description: Local server
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    GenericObject:
+      type: object
+      additionalProperties: true
+    APIError:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericObject"
+  /livez:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Liveness status
+  /readyz:
+    get:
+      summary: Readiness probe
+      security: []
+      responses:
+        "200":
+          description: Readiness status
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      security: []
+      responses:
+        "200":
+          description: Metrics payload
+  /v1/system/info:
+    get:
+      summary: System information
+      security: []
+      responses:
+        "200":
+          description: System metadata
+  /v1/transactions:
+    post:
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericObject"
+      responses:
+        "201":
+          description: Transaction created
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+    get:
+      summary: List transactions
+      parameters:
+        - name: account_id
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transactions list
+  /v1/transactions/batch:
+    post:
+      summary: Create transactions in batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericObject"
+      responses:
+        "201":
+          description: Batch created
+  /v1/transactions/{id}:
+    get:
+      summary: Get transaction by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction details
+  /v1/transactions/{id}/settle:
+    post:
+      summary: Settle a pending transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction settled
+  /v1/transactions/{id}/cancel:
+    post:
+      summary: Cancel a pending transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction cancelled
+  /v1/transactions/{id}/reverse:
+    post:
+      summary: Reverse a transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction reversed
+  /v1/accounts:
+    post:
+      summary: Create account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericObject"
+      responses:
+        "201":
+          description: Account created
+    get:
+      summary: List accounts
+      responses:
+        "200":
+          description: Accounts list
+  /v1/accounts/{id}:
+    get:
+      summary: Get account by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account details
+  /v1/accounts/{id}/metadata:
+    patch:
+      summary: Update account metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericObject"
+      responses:
+        "200":
+          description: Account metadata updated
+  /v1/accounts/{id}/balances:
+    get:
+      summary: Get multi-currency balances
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Balances
+  /v1/accounts/{id}/balances/{currency}:
+    get:
+      summary: Get current balance for currency
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: currency
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current balance
+  /v1/accounts/{id}/balances/{currency}/history:
+    get:
+      summary: Get historical balance for currency
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: currency
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: timestamp
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Historical balance

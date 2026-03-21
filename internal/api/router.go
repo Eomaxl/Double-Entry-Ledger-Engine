@@ -3,6 +3,7 @@ package api
 import (
 	"time"
 
+	apidocs "github.com/Eomaxl/double-entry-ledger-engine/internal/api/docs"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/api/handlers"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/api/middleware"
 	"github.com/Eomaxl/double-entry-ledger-engine/internal/config"
@@ -119,6 +120,7 @@ func (r *Router) setupRoutes() {
 	r.engine.GET("/livez", r.healthHandler.Liveness)
 	r.engine.GET("/readyz", r.healthHandler.Readiness)
 	r.engine.GET("/metrics", r.healthHandler.Metrics)
+	apidocs.RegisterRoutes(r.engine)
 
 	// API v1 routes
 	v1 := r.engine.Group("/v1")
