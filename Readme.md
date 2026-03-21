@@ -193,9 +193,18 @@ Start observability profile:
 docker compose --profile observability up -d prometheus grafana node-exporter
 ```
 
-- Prometheus: `http://<EC2_PUBLIC_IP>:9090`
-- Grafana: `http://<EC2_PUBLIC_IP>:3000`
+- Prometheus: `http://54.82.229.135:9090`
+- Grafana: `http://54.82.229.135:3000`
 - Provisioned dashboard: `monitoring/grafana/dashboards/portfolio-overview.json`
+
+### Live URLs
+
+- Application API: `http://54.82.229.135:8080`
+- Swagger UI: `http://54.82.229.135:8080/docs`
+- OpenAPI Spec: `http://54.82.229.135:8080/openapi.yaml`
+- Health: `http://54.82.229.135:8080/health`
+- Prometheus: `http://54.82.229.135:9090`
+- Grafana: `http://54.82.229.135:3000`
 
 ### Max-throughput benchmark command
 
@@ -274,6 +283,15 @@ Notes:
 
 ## Status
 
-🚧 **Under Active Development** 🚧
+### Production-ready checklist
 
-This project is currently in development. Core infrastructure is in place, and domain logic implementation is in progress.
+- [x] Containerized deployment available via Docker and AWS ECR
+- [x] CI pipeline for image build and push (`.github/workflows/deploy.yml`)
+- [x] AWS runtime deployed (EC2 + RDS PostgreSQL)
+- [x] API authentication enabled via API keys
+- [x] Observability stack available (Prometheus + Grafana + node-exporter)
+- [x] Swagger/OpenAPI endpoints available for API discovery (`/docs`, `/openapi.yaml`)
+- [x] Load testing scripts available and benchmarked on current setup
+- [ ] Secret management hardening (remove plain-text credentials from examples/runtime)
+
+Current state: deployable and demo-ready for portfolio usage; not fully production-hardened yet.
