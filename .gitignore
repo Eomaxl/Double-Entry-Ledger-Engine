@@ -20,3 +20,4 @@ coverage.out
 # Ignore all markdown docs except primary README.
 *.md
 !Readme.md
+!SCALING.md
